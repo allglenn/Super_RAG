@@ -2,6 +2,8 @@
 
 A production-ready Retrieval-Augmented Generation (RAG) system built on Google Cloud Platform that processes documents uploaded to GCS buckets, creates vector embeddings using Vertex AI, and provides intelligent query responses through a Gemini-powered agent.
 
+### read the article ==> https://medium.com/towards-artificial-intelligence/building-a-production-ready-agentic-rag-system-on-gcp-vertex-ai-adk-terraform-97742f3b2a41
+
 ## Architecture Overview
 
 ```
