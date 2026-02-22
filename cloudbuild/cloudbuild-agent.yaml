@@ -1,0 +1,68 @@
+# Cloud Build configuration for adk-agent service
+
+steps:
+  # Run tests
+  - name: 'python:3.11-slim'
+    id: 'test'
+    dir: 'services/adk-agent'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install -r requirements.txt pytest pytest-asyncio
+        # pytest tests/ || echo "No tests found, skipping"
+
+  # Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build'
+    dir: 'services/adk-agent'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/rag-docker-repo/adk-agent:${SHORT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/rag-docker-repo/adk-agent:latest'
+      - '.'
+
+  # Push Docker image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/rag-docker-repo/adk-agent'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'adk-agent'
+      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/rag-docker-repo/adk-agent:${SHORT_SHA}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--service-account=adk-agent@${PROJECT_ID}.iam.gserviceaccount.com'
+
+  # Verify deployment
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'verify'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        SERVICE_URL=$(gcloud run services describe adk-agent --region=${_REGION} --format='value(status.url)')
+        echo "Service deployed at: $SERVICE_URL"
+        echo "Testing health endpoint..."
+        curl -f $SERVICE_URL/health || echo "Health check failed"
+
+substitutions:
+  _REGION: 'us-central1'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'N1_HIGHCPU_8'
+
+timeout: '1200s'

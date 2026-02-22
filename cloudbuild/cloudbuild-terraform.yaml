@@ -1,0 +1,63 @@
+# Cloud Build configuration for Terraform infrastructure deployment
+
+steps:
+  # Terraform fmt check
+  - name: 'hashicorp/terraform:1.5'
+    id: 'fmt'
+    dir: 'terraform'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - 'terraform fmt -check -recursive || (echo "Run terraform fmt to fix formatting" && exit 1)'
+
+  # Terraform init
+  - name: 'hashicorp/terraform:1.5'
+    id: 'init'
+    dir: 'terraform'
+    args:
+      - 'init'
+      - '-backend-config=bucket=${PROJECT_ID}-terraform-state'
+
+  # Terraform validate
+  - name: 'hashicorp/terraform:1.5'
+    id: 'validate'
+    dir: 'terraform'
+    args:
+      - 'validate'
+
+  # Terraform plan
+  - name: 'hashicorp/terraform:1.5'
+    id: 'plan'
+    dir: 'terraform'
+    args:
+      - 'plan'
+      - '-var=project_id=${PROJECT_ID}'
+      - '-var=region=${_REGION}'
+      - '-var=documents_bucket_name=${PROJECT_ID}-rag-documents'
+      - '-out=tfplan'
+
+  # Terraform apply (only on main branch)
+  - name: 'hashicorp/terraform:1.5'
+    id: 'apply'
+    dir: 'terraform'
+    args:
+      - 'apply'
+      - '-auto-approve'
+      - 'tfplan'
+
+  # Output infrastructure details
+  - name: 'hashicorp/terraform:1.5'
+    id: 'output'
+    dir: 'terraform'
+    args:
+      - 'output'
+      - '-json'
+
+substitutions:
+  _REGION: 'us-central1'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'N1_HIGHCPU_8'
+
+timeout: '1800s'

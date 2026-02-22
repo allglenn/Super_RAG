@@ -1,0 +1,68 @@
+# Super_RAG V1 - Terraform Variables Example
+# Copy this file to terraform.tfvars and update with your actual values
+
+# GCP Project Configuration
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+environment = "prod"
+
+# Storage Configuration
+documents_bucket_name   = "your-gcp-project-id-rag-documents"
+bucket_lifecycle_age_days = 90
+
+# Vertex AI Configuration
+embedding_model = "text-embedding-004"
+gemini_model    = "gemini-1.5-pro"
+chunk_size      = 1000
+chunk_overlap   = 200
+top_k_chunks    = 5
+
+# Corpus Configuration (optional, uses defaults if not specified)
+# corpora_config = {
+#   legal = {
+#     display_name = "Legal Documents Corpus"
+#     description  = "Corpus for legal domain documents"
+#     folder_path  = "legal/"
+#   }
+#   technical = {
+#     display_name = "Technical Documents Corpus"
+#     description  = "Corpus for technical domain documents"
+#     folder_path  = "technical/"
+#   }
+#   training = {
+#     display_name = "Training Documents Corpus"
+#     description  = "Corpus for training domain documents"
+#     folder_path  = "training/"
+#   }
+# }
+
+# Cloud Run Configuration (optional, uses defaults if not specified)
+# rag_ingestor_config = {
+#   cpu              = "2"
+#   memory           = "4Gi"
+#   max_instances    = 10
+#   min_instances    = 0
+#   timeout_seconds  = 3600
+#   concurrency      = 1
+# }
+
+# adk_agent_config = {
+#   cpu              = "2"
+#   memory           = "2Gi"
+#   max_instances    = 5
+#   min_instances    = 1
+#   timeout_seconds  = 300
+#   concurrency      = 80
+# }
+
+# Docker Images (will be updated by Cloud Build)
+# docker_image_rag_ingestor = "us-central1-docker.pkg.dev/your-gcp-project-id/rag-docker-repo/rag-ingestor:latest"
+# docker_image_adk_agent    = "us-central1-docker.pkg.dev/your-gcp-project-id/rag-docker-repo/adk-agent:latest"
+
+# Resource Labels
+labels = {
+  application = "super-rag"
+  version     = "v1"
+  managed_by  = "terraform"
+  team        = "ml-platform"
+}

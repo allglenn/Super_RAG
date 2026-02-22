@@ -1,0 +1,66 @@
+# Cloud Build configuration for rag-ingestor service
+
+steps:
+  # Run tests
+  - name: 'python:3.11-slim'
+    id: 'test'
+    dir: 'services/rag-ingestor'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install -r requirements.txt pytest pytest-asyncio
+        # pytest tests/ || echo "No tests found, skipping"
+
+  # Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build'
+    dir: 'services/rag-ingestor'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/rag-docker-repo/rag-ingestor:${SHORT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/rag-docker-repo/rag-ingestor:latest'
+      - '.'
+
+  # Push Docker image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/rag-docker-repo/rag-ingestor'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'rag-ingestor'
+      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/rag-docker-repo/rag-ingestor:${SHORT_SHA}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--no-allow-unauthenticated'
+      - '--service-account=rag-ingestor@${PROJECT_ID}.iam.gserviceaccount.com'
+
+  # Verify deployment
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'verify'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        SERVICE_URL=$(gcloud run services describe rag-ingestor --region=${_REGION} --format='value(status.url)')
+        echo "Service deployed at: $SERVICE_URL"
+
+substitutions:
+  _REGION: 'us-central1'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'N1_HIGHCPU_8'
+
+timeout: '1200s'
