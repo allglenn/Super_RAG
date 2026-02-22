@@ -387,7 +387,7 @@ Set up triggers in Cloud Build console to automatically deploy on push to `main`
 
 ## License
 
-[Specify your license]
+MIT
 
 ## Support
 
